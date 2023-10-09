@@ -8,7 +8,7 @@ ticker_list = ticker_names['Symbol'].to_list()
 #%%
 for stock in ticker_list:
     ticker = Ticker(stock)
-    historical_data = ticker.history(period='5y')
+    historical_data = ticker.history(start="2013-07-31", end="2023-08-02")
     df = pd.DataFrame(historical_data)
     df['DayOverDayReturn'] = df['close'].pct_change() * 100
     df['Adj_DayOverDayReturn'] = df['adjclose'].pct_change() * 100
