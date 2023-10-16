@@ -33,7 +33,11 @@ v = pd.read_csv('stocks/V_data.csv')
 vz = pd.read_csv('stocks/VZ_data.csv')
 wba = pd.read_csv('stocks/WBA_data.csv')
 wmt = pd.read_csv('stocks/WMT_data.csv')
-
+#%%
+portfolio = pd.read_csv('portfolio.csv')
+portfolio['Date'] = pd.to_datetime(portfolio['Date'])
+portfolio.set_index('Date', inplace=True)
+portfolio = portfolio.drop(columns=["Unnamed: 0"])
 #%%
 stocks = [aapl, amgn, axp, ba, cat, crm, csco, cvx, dis, gs, hd, hon, ibm, intc, jpm, jnj, ko, mcd, mmm, mrk, msft, nke, pg, trv, unh, v, vz, wba, wmt]
 #%%
@@ -197,8 +201,9 @@ def volatility_30(stock):
     plt.show()
 # %%
 def stock_data(stock):
-    plt.figure(figsize=(16, 10))
+    plt.figure(figsize=(20, 16))
     plt.plot(stock.index, stock['adjclose'], label='Adjusted Close Price', color='blue')
+    plt.plot(stock.index, stock['EMA'], label='Moving Average', color='purple')
     plt.plot(stock.index, stock['SMA50'], label='50-Day Moving Average', color='orange')
     plt.plot(stock.index, stock['SMA200'], label='200-Day Moving Average', color='green')
     plt.plot(stock.index, stock['BollingerUpper'], label='Bollinger Upper', color='red', linestyle='--')
