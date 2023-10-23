@@ -138,10 +138,6 @@ for idx, stock in enumerate(stocks):
 aapl, amgn, axp, ba, cat, crm, csco, cvx, dis, gs, hd, hon, ibm, intc, jpm, jnj, ko, mcd, mmm, mrk, msft, nke, pg, trv, unh, v, vz, wba, wmt = stocks
 
 # %%
-# symbs = ['aapl', 'amgn', 'axp', 'ba', 'cat', 'crm', 'csco', 'cvx', 'dis', 'gs', 'hd', 'hon', 'ibm', 'intc', 'jpm', 'jnj', 'ko', 'mcd', 'mmm', 'mrk', 'msft', 'nke', 'pg', 'trv', 'unh', 'v', 'vz', 'wba', 'wmt']
-# for symb in symbs:
-#     eval(symb).to_csv(f'stocks/{symb}_data.csv')
-# %%
 def fetch_data(ticker_symbol, start_date, end_date):
     ticker = Ticker(ticker_symbol)
     data = ticker.history(start=start_date, end=end_date, interval='1d')
@@ -154,31 +150,46 @@ sp500_data = fetch_data("^GSPC", "2013-07-31", "2023-08-02")
 sp500_data = sp500_data.reset_index()
 sp500_close = sp500_data['close']
 
+world_data = fetch_data('URTH', "2013-07-31", "2023-08-02")
+world_data = world_data.reset_index()
+world_close = world_data['close']
+
 
 # %%
 for idx, stock_df in enumerate(stocks):
     stock_df = stock_df.reset_index()
     sp500_data['date'] = pd.to_datetime(sp500_data['date'])
     nasdaq_data['date'] = pd.to_datetime(nasdaq_data['date'])
+    world_data['date'] = pd.to_datetime(world_data['date'])
     stock_df['date'] = pd.to_datetime(stock_df['date'])
     stock_df['sp500'] = sp500_close
     stock_df['nasdaq'] = nasdaq_close
-    
+for stock in stocks:
+    stock['world_index'] = world_close
+
+#%%
+
 
 #%%
 symbs = ['aapl', 'amgn', 'axp', 'ba', 'cat', 'crm', 'csco', 'cvx', 'dis', 'gs', 'hd', 'hon', 'ibm', 'intc', 'jpm', 'jnj', 'ko', 'mcd', 'mmm', 'mrk', 'msft', 'nke', 'pg', 'trv', 'unh', 'v', 'vz', 'wba', 'wmt']
 for symb in symbs:
     eval(symb).to_csv(f'stocks/{symb}_data.csv')
+#%%
+# Sector and Industry Data
+consumer_goods = pd.read_csv('consumer_goods.csv')
+consumer_services = pd.read_excel('consumer_services.xlsx')
+technology = pd.read_excel('technology_inx.xlsx')
+financials = pd.read_excel('financials_inx.xlsx')
 
 
-
-
-
-
-
-
-
-
+#%%
+# Apple
+apple_revenue = pd.read_excel('aaple_revenue.xlsx')
+apple_revenue = apple_revenue.rename(columns={'Date': 'date'})
+apple_revenue = apple_revenue.set_index('date').resample('D').ffill().reset_index()
+apple_revenue['date'] = pd.to_datetime(apple_revenue['date'])
+apple_revenue = apple_revenue[(apple_revenue['date'] >= '2013-07-31') & (apple_revenue['date'] <= '2023-08-02')]
+aapl = aapl.merge(apple_revenue, on='date', how='left')
 
 
 
