@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 from yahooquery import Ticker
+import yfinance as yf
 #%%
 ticker_names = pd.read_csv('ticker_names.csv')
 ticker_list = ticker_names['Symbol'].to_list()
@@ -73,4 +74,114 @@ for stock in ticker_list:
     listing = pd.read_csv(f'stocks/{stock}_data.csv')
     portfolio[stock] = listing['adjclose']
 portfolio.to_csv('portfolio.csv')
+# %%
+gdp = pd.read_csv('GDP.csv')
+gdp['DATE'] = pd.to_datetime(gdp['DATE'])
+filtered_gdp = gdp[gdp['DATE'] > '2013-04-01']
+print(filtered_gdp)
+# %%
+data = {
+    'DATE': ['2013-07-01', '2013-10-01', '2014-01-01', '2014-04-01', '2014-07-01', '2014-10-01', '2015-01-01', '2015-04-01', 
+            '2015-07-01', '2015-10-01', '2016-01-01', '2016-04-01', '2016-07-01', '2016-10-01', '2017-01-01', 
+            '2017-04-01', '2017-07-01', '2017-10-01', '2018-01-01', '2018-04-01', '2018-07-01', '2018-10-01', 
+            '2019-01-01', '2019-04-01', '2019-07-01', '2019-10-01', '2020-01-01', '2020-04-01', '2020-07-01', 
+            '2020-10-01', '2021-01-01', '2021-04-01', '2021-07-01', '2021-10-01', '2022-01-01', '2022-04-01', 
+            '2022-07-01', '2022-10-01', '2023-01-01', '2023-04-01', '2023-07-01', '2023-10-01'],
+    'GDP': [16953.838, 17192.019, 17197.738, 17518.508, 17804.228, 17912.079, 18063.529, 18279.784, 18401.626, 18435.137, 
+            18525.933, 18711.702, 18892.639, 19089.379, 19280.084, 19438.643, 19692.595, 20037.088, 20328.553, 
+            20580.912, 20798.730, 20917.867, 21104.133, 21384.775, 21694.282, 21902.390, 21706.513, 19913.143, 
+            21647.640, 22024.502, 22600.185, 23292.362, 23828.973, 24654.603, 25029.116, 25544.273, 25994.639, 
+            26408.405, 26813.601, 27063.012, 27171.264, 27279.949]
+}
+gdp = pd.DataFrame(data)
+gdp['DATE'] = pd.to_datetime(gdp['DATE'])
+gdp = gdp.rename(columns={'DATE': 'date'})
+gdp_daily = gdp.set_index('date').resample('D').ffill().reset_index()
+
+# %%
+gdp_daily['date'] = pd.to_datetime(gdp_daily['date'])
+aapl['date'] = pd.to_datetime(aapl['date'])
+merged_data = aapl.merge(gdp_daily, on='date', how='left')
+# %%
+cpi = pd.read_csv('CPIAUCSL.csv')
+filtered_cpi = cpi[cpi['DATE'] >= '2013-07-01']
+filtered_cpi['DATE'] = pd.to_datetime(filtered_cpi['DATE'])
+filtered_cpi = filtered_cpi.rename(columns={'DATE': 'date'})
+# %%
+cpi_daily = filtered_cpi.set_index('date').resample('D').ffill().reset_index()
+# %%
+merged_data_aapl = merged_data.merge(cpi_daily, on='date', how='left')
+# %%
+unemp = pd.read_csv('UNRATE.csv')
+filtered_unemp = unemp[unemp['DATE'] >= '2013-07-01']
+filtered_unemp['DATE'] = pd.to_datetime(filtered_unemp['DATE'])
+filtered_unemp = filtered_unemp.rename(columns={'DATE': 'date'})
+# %%
+unemp_daily = filtered_unemp.set_index('date').resample('D').ffill().reset_index()
+# %%
+merged_data_aapl_un = merged_data_aapl.merge(unemp_daily, on='date', how='left')
+# %%
+gdp_column = merged_data_aapl_un['GDP']
+unemp_column = merged_data_aapl_un['UNRATE']
+cpi_column = merged_data_aapl_un['CPIAUCSL']
+# %%
+stocks = [aapl, amgn, axp, ba, cat, crm, csco, cvx, dis, gs, hd, hon, ibm, intc, jpm, jnj, ko, mcd, mmm, mrk, msft, nke, pg, trv, unh, v, vz, wba, wmt]
+
+cols_to_add = ['GDP', 'UNRATE', 'CPIAUCSL']
+
+for idx, stock in enumerate(stocks):
+    stock['date'] = pd.to_datetime(stock['date'])
+    updated_stock = stock.merge(merged_data_aapl_un[['date'] + cols_to_add], on='date', how='left')
+    stocks[idx] = updated_stock
+    
+
+aapl, amgn, axp, ba, cat, crm, csco, cvx, dis, gs, hd, hon, ibm, intc, jpm, jnj, ko, mcd, mmm, mrk, msft, nke, pg, trv, unh, v, vz, wba, wmt = stocks
+
+# %%
+# symbs = ['aapl', 'amgn', 'axp', 'ba', 'cat', 'crm', 'csco', 'cvx', 'dis', 'gs', 'hd', 'hon', 'ibm', 'intc', 'jpm', 'jnj', 'ko', 'mcd', 'mmm', 'mrk', 'msft', 'nke', 'pg', 'trv', 'unh', 'v', 'vz', 'wba', 'wmt']
+# for symb in symbs:
+#     eval(symb).to_csv(f'stocks/{symb}_data.csv')
+# %%
+def fetch_data(ticker_symbol, start_date, end_date):
+    ticker = Ticker(ticker_symbol)
+    data = ticker.history(start=start_date, end=end_date, interval='1d')
+    return data
+nasdaq_data = fetch_data("^IXIC", "2013-07-31", "2023-08-02")
+nasdaq_data = nasdaq_data.reset_index()
+nasdaq_close = nasdaq_data['close']
+
+sp500_data = fetch_data("^GSPC", "2013-07-31", "2023-08-02")
+sp500_data = sp500_data.reset_index()
+sp500_close = sp500_data['close']
+
+
+# %%
+for idx, stock_df in enumerate(stocks):
+    stock_df = stock_df.reset_index()
+    sp500_data['date'] = pd.to_datetime(sp500_data['date'])
+    nasdaq_data['date'] = pd.to_datetime(nasdaq_data['date'])
+    stock_df['date'] = pd.to_datetime(stock_df['date'])
+    stock_df['sp500'] = sp500_close
+    stock_df['nasdaq'] = nasdaq_close
+    
+
+#%%
+symbs = ['aapl', 'amgn', 'axp', 'ba', 'cat', 'crm', 'csco', 'cvx', 'dis', 'gs', 'hd', 'hon', 'ibm', 'intc', 'jpm', 'jnj', 'ko', 'mcd', 'mmm', 'mrk', 'msft', 'nke', 'pg', 'trv', 'unh', 'v', 'vz', 'wba', 'wmt']
+for symb in symbs:
+    eval(symb).to_csv(f'stocks/{symb}_data.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # %%
