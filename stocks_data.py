@@ -180,6 +180,12 @@ consumer_goods = pd.read_csv('consumer_goods.csv')
 consumer_services = pd.read_excel('consumer_services.xlsx')
 technology = pd.read_excel('technology_inx.xlsx')
 financials = pd.read_excel('financials_inx.xlsx')
+#%%
+for stock in stocks:
+    stock['consumer_goods'] = consumer_goods['Close']
+    stock['consumer_services'] = consumer_services['price']
+    stock['technology'] = technology['price']
+    stock['financials'] = financials['price']
 
 
 #%%
