@@ -1,6 +1,7 @@
 # %%
 from bs4 import BeautifulSoup
 import pandas as pd
+import requests
 
 # %%
 tickers = pd.read_csv('ticker_names.csv')
@@ -130,3 +131,47 @@ wba_financial, v_financial, crm_financial, cvx_financial, pg_financial, vz_finan
 
 # %%
 
+stocks = [aapl, amgn, axp, ba, cat, crm, csco, cvx, dis, gs, hd, hon, ibm, intc, jpm, jnj, ko, mcd, mmm, mrk, msft, nke, pg, trv, unh, v, vz, wba, wmt]
+
+for stock in stocks:
+    stock.drop('Unnamed: 0', axis=1, inplace=True)
+    stock.drop('symbol', axis=1, inplace=True)
+    stock['date'] = pd.to_datetime(stock['date'])
+    stock.set_index('date', inplace=True)
+# %%
+
+aapl = aapl.merge(aapl_financial, left_index=True, right_index=True)
+amgn = amgn.merge(amgn_financial, left_index=True, right_index=True)
+axp = axp.merge(axp_financial, left_index=True, right_index=True)
+ba = ba.merge(ba_financial, left_index=True, right_index=True)
+cat = cat.merge(cat_financial, left_index=True, right_index=True)
+crm = crm.merge(crm_financial, left_index=True, right_index=True)
+csco = csco.merge(csco_financial, left_index=True, right_index=True)
+cvx = cvx.merge(cvx_financial, left_index=True, right_index=True)
+dis = dis.merge(dis_financial, left_index=True, right_index=True)
+gs = gs.merge(gs_financial, left_index=True, right_index=True)
+hd = hd.merge(hd_financial, left_index=True, right_index=True)
+hon = hon.merge(hon_financial, left_index=True, right_index=True)
+ibm = ibm.merge(ibm_financial, left_index=True, right_index=True)
+intc = intc.merge(intc_financial, left_index=True, right_index=True)
+jpm = jpm.merge(jpm_financial, left_index=True, right_index=True)
+jnj = jnj.merge(jnj_financial, left_index=True, right_index=True)
+ko = ko.merge(ko_financial, left_index=True, right_index=True)
+mcd = mcd.merge(mcd_financial, left_index=True, right_index=True)
+mmm = mmm.merge(mmm_financial, left_index=True, right_index=True)
+mrk = mrk.merge(mrk_financial, left_index=True, right_index=True)
+msft = msft.merge(msft_financial, left_index=True, right_index=True)
+nke = nke.merge(nke_financial, left_index=True, right_index=True)
+pg = pg.merge(pg_financial, left_index=True, right_index=True)
+trv = trv.merge(trv_financial, left_index=True, right_index=True)
+unh = unh.merge(unh_financial, left_index=True, right_index=True)
+v = v.merge(v_financial, left_index=True, right_index=True)
+vz = vz.merge(vz_financial, left_index=True, right_index=True)
+wba = wba.merge(wba_financial, left_index=True, right_index=True)
+wmt = wmt.merge(wmt_financial, left_index=True, right_index=True)
+
+# %%
+symbs = ['aapl', 'amgn', 'axp', 'ba', 'cat', 'crm', 'csco', 'cvx', 'dis', 'gs', 'hd', 'hon', 'ibm', 'intc', 'jpm', 'jnj', 'ko', 'mcd', 'mmm', 'mrk', 'msft', 'nke', 'pg', 'trv', 'unh', 'v', 'vz', 'wba', 'wmt']
+for symb in symbs:
+    eval(symb).to_csv(f'stocks/{symb}_data.csv')
+# %%
