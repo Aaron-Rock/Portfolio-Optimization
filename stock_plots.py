@@ -217,3 +217,15 @@ def stock_data(stock, stock_name):
     plt.show()
 
 # %%
+def metric(stock, stock_name, col):
+    plt.figure(figsize=(16, 10))
+    plt.plot(stock.index, stock[col])
+    plt.title(f'{stock_name} {col}')
+    plt.xlabel('Date')
+    plt.ylabel(col)
+    plt.grid()
+    plt.minorticks_on()
+    plt.tight_layout()
+    plt.show()
+
+# %%

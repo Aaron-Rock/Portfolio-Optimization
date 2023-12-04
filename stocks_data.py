@@ -11,6 +11,8 @@ for stock in ticker_list:
     ticker = Ticker(stock)
     historical_data = ticker.history(start="2013-07-31", end="2023-08-02")
     df = pd.DataFrame(historical_data)
+    df['Open_Close_Diff'] = df['close'] - df['open']
+    df['High_Low_Diff'] = df['high'] - df['low']
     df['DayOverDayReturn'] = df['close'].pct_change() * 100
     df['Adj_DayOverDayReturn'] = df['adjclose'].pct_change() * 100
     df['DayOverDayReturn'] = df['DayOverDayReturn'].fillna(0)
@@ -96,7 +98,9 @@ data = {
 gdp = pd.DataFrame(data)
 gdp['DATE'] = pd.to_datetime(gdp['DATE'])
 gdp = gdp.rename(columns={'DATE': 'date'})
-gdp_daily = gdp.set_index('date').resample('D').ffill().reset_index()
+gdp.set_index('date', inplace=True)
+
+gdp_daily = gdp.resample('D').interpolate(method='linear').reset_index()
 
 # %%
 gdp_daily['date'] = pd.to_datetime(gdp_daily['date'])
@@ -108,7 +112,9 @@ filtered_cpi = cpi[cpi['DATE'] >= '2013-07-01']
 filtered_cpi['DATE'] = pd.to_datetime(filtered_cpi['DATE'])
 filtered_cpi = filtered_cpi.rename(columns={'DATE': 'date'})
 # %%
-cpi_daily = filtered_cpi.set_index('date').resample('D').ffill().reset_index()
+
+filtered_cpi.set_index('date', inplace=True)
+cpi_daily = filtered_cpi.resample('D').interpolate(method='linear').reset_index()
 # %%
 merged_data_aapl = merged_data.merge(cpi_daily, on='date', how='left')
 # %%
@@ -117,7 +123,8 @@ filtered_unemp = unemp[unemp['DATE'] >= '2013-07-01']
 filtered_unemp['DATE'] = pd.to_datetime(filtered_unemp['DATE'])
 filtered_unemp = filtered_unemp.rename(columns={'DATE': 'date'})
 # %%
-unemp_daily = filtered_unemp.set_index('date').resample('D').ffill().reset_index()
+filtered_unemp.set_index('date', inplace=True)
+unemp_daily = filtered_unemp.resample('D').interpolate(method='linear').reset_index()
 # %%
 merged_data_aapl_un = merged_data_aapl.merge(unemp_daily, on='date', how='left')
 # %%
@@ -166,6 +173,8 @@ for idx, stock_df in enumerate(stocks):
     stock_df['nasdaq'] = nasdaq_close
 for stock in stocks:
     stock['world_index'] = world_close
+    stock['sp500'] = sp500_close
+    stock['nasdaq'] = nasdaq_close
 
 #%%
 
@@ -187,15 +196,9 @@ for stock in stocks:
     stock['technology'] = technology['price']
     stock['financials'] = financials['price']
 
-
-#%%
-# Apple
-apple_revenue = pd.read_excel('aaple_revenue.xlsx')
-apple_revenue = apple_revenue.rename(columns={'Date': 'date'})
-apple_revenue = apple_revenue.set_index('date').resample('D').ffill().reset_index()
-apple_revenue['date'] = pd.to_datetime(apple_revenue['date'])
-apple_revenue = apple_revenue[(apple_revenue['date'] >= '2013-07-31') & (apple_revenue['date'] <= '2023-08-02')]
-aapl = aapl.merge(apple_revenue, on='date', how='left')
+symbs = ['aapl', 'amgn', 'axp', 'ba', 'cat', 'crm', 'csco', 'cvx', 'dis', 'gs', 'hd', 'hon', 'ibm', 'intc', 'jpm', 'jnj', 'ko', 'mcd', 'mmm', 'mrk', 'msft', 'nke', 'pg', 'trv', 'unh', 'v', 'vz', 'wba', 'wmt']
+for symb in symbs:
+    eval(symb).to_csv(f'stocks/{symb}_data.csv')
 
 
 

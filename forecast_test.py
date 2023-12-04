@@ -1,24 +1,15 @@
 #%%
-import pandas as pd
+from keras.models import load_model
 import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 import yfinance as yf
 import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.io as pio
 import plotly.graph_objects as go
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM, Dropout
-from keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.callbacks import EarlyStopping
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-from keras.regularizers import l2
-from sklearn.metrics import r2_score
-from keras.models import load_model
-#%%
-# data = pd.read_csv('model_files/aapl_lstm.csv', parse_dates=['date'], index_col='date') 
-# data = data.iloc[:-200]
 #%%
 stock_files = [
     'aapl_lstm.csv','amgn_lstm.csv', 'axp_lstm.csv', 'ba_lstm.csv','cat_lstm.csv', 'crm_lstm.csv', 'csco_lstm.csv',
@@ -30,6 +21,7 @@ stock_files = [
     'wmt_lstm.csv'
 ]
 
+
 stock_files_dict = {file.split('_')[0].upper(): file for file in stock_files}
 results_df = pd.DataFrame(columns=[
     'Stock Symbol', 'Last Adj Close', 'Last Forecasted Price', 
@@ -40,11 +32,12 @@ adjclose_prices_dict = {}
 
 for ticker, file in stock_files_dict.items():
     print(f"Processing {ticker}")
+    model = load_model(f'{ticker}_model.h5')
     data = pd.read_csv(f'model_files/{file}', parse_dates=['date'], index_col='date') 
-    data = data.iloc[:-220]
+    data = data.iloc[:-410]
     
     selected_features = [
-        'open', 'high', 'low', 'volume', 'DayOverDayReturn', 'Revenue', 'EBITDA',
+        'open', 'high', 'low', 'volume', 'DayOverDayReturn','Revenue', 'EBITDA',
     'SMA50', 'SMA200', '30day_Volatility', 'sp500', 'consumer_services', 'consumer_goods', 'nasdaq', 'technology', 'financials', 'Open_Close_Diff', 'High_Low_Diff',
         'GDP', 'UNRATE', 'CPIAUCSL', 'world_index','adjclose'
     ]
@@ -61,7 +54,7 @@ for ticker, file in stock_files_dict.items():
 
     # Split the data into x_train and y_train data sets
     x_train, y_train = [], []
-    look_back = 1000 
+    look_back = 1000
     forecast_horizon = 90 
     daily_returns = data['adjclose'].pct_change()
     last_1000_days_returns = daily_returns.tail(look_back)
@@ -75,41 +68,6 @@ for ticker, file in stock_files_dict.items():
     x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], len(selected_features)))
     x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.2, random_state=42, shuffle=True)
     
-    # # Build the LSTM model
-    model = Sequential()
-    model.add(LSTM(100, return_sequences=True, input_shape=(look_back, len(selected_features))))
-    model.add(LSTM(50, return_sequences=False))
-    model.add(Dense(forecast_horizon)) 
-    model.compile(optimizer=Adam(learning_rate=0.001), loss='mse')
-    model.summary()
-   
-
-    early_stopping = EarlyStopping(
-        monitor='val_loss',
-        patience=10, 
-        restore_best_weights=True)
-
-    # Train the model with the early stopping callback
-    history = model.fit(
-        x_train, y_train,
-        epochs=10,
-        batch_size=32,
-        validation_data=(x_val, y_val),
-        callbacks=[early_stopping]
-    )
-    
-    model.save(f'{ticker}_model.h5')
-
-    # Plot the training and validation loss
-    plt.figure(figsize=(10, 6))
-    plt.plot(history.history['loss'], label='Train Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.title(f'Model Loss - {ticker}')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend()
-    plt.show()
-
     num_features = scaled_data.shape[1] 
     last_look_back_days_data = dataset[-look_back:, :]
     last_look_back_days_scaled = scaler.transform(last_look_back_days_data)
@@ -140,7 +98,7 @@ for ticker, file in stock_files_dict.items():
 
     actual_closing_prices = actual_closing_prices.reindex(future_dates, method='nearest')
     adjclose_prices_dict[ticker] = actual_closing_prices
-
+    
     # Calculate performance metrics
     mae = mean_absolute_error(actual_closing_prices, pred_close_price)
     mse = mean_squared_error(actual_closing_prices, pred_close_price)
@@ -224,9 +182,17 @@ for ticker, file in stock_files_dict.items():
         mode='lines',
         name='Actual Prices'
     )
+    
+    trace_actual_prices = go.Scatter(
+    x=actual_closing_prices.index,
+    y=actual_closing_prices.values,
+    mode='lines',
+    name='Actual Closing Prices'
+)
 
     # Create the figure and add only the actual and smoothed traces
     fig = go.Figure(data=[trace_actual, trace_smoothed_pred])
+    fig.add_trace(trace_actual_prices)
 
     # Update the layout
     fig.update_layout(
@@ -245,5 +211,3 @@ results_df.to_csv('results.csv')
 saved_future_dates = future_dates
 stocks_df = pd.DataFrame(adjclose_prices_dict, index=saved_future_dates)
 stocks_df.to_csv('stock_backtest.csv')
-
-# %%
